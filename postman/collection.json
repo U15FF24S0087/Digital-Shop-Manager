@@ -1,0 +1,1163 @@
+{
+  "info": {
+    "_postman_id": "dsm-col-002",
+    "name": "Digital Shop Manager API",
+    "description": "Complete REST API collection. BEFORE RUNNING:\n1. Import environment.json and select 'Digital Shop Manager - Local'\n2. Run 'Auth/Login' first — it saves the token automatically\n3. All other requests use {{accessToken}} from the environment",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      { "key": "token", "value": "{{accessToken}}", "type": "string" }
+    ]
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status is 201', function() { pm.response.to.have.status(201); });",
+            "pm.test('Has accessToken', function() { var d = pm.response.json().data; pm.expect(d.accessToken).to.be.a('string'); });",
+            "pm.test('Password not exposed', function() { pm.expect(JSON.stringify(pm.response.json())).to.not.include('password'); });"
+          ]}}],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "register"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Test User\",\n  \"email\": \"testuser@example.com\",\n  \"password\": \"Test@1234!\"\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        },
+        {
+          "name": "Register - Weak Password (expect 422)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status is 422', function() { pm.response.to.have.status(422); });"
+          ]}}],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "register"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Bad\",\n  \"email\": \"bad@example.com\",\n  \"password\": \"weak\"\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        },
+        {
+          "name": "Login",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status is 200', function() { pm.response.to.have.status(200); });",
+            "pm.test('Has accessToken', function() {",
+            "  var d = pm.response.json().data;",
+            "  pm.expect(d.accessToken).to.be.a('string');",
+            "  pm.environment.set('accessToken', d.accessToken);",
+            "  pm.environment.set('refreshToken', d.refreshToken);",
+            "  console.log('Token saved:', d.accessToken.substring(0,20) + '...');",
+            "});",
+            "pm.test('Password not in response', function() {",
+            "  pm.expect(JSON.stringify(pm.response.json())).to.not.include('\\\"password\\\"');",
+            "});"
+          ]}}],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{adminEmail}}\",\n  \"password\": \"{{adminPassword}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        },
+        {
+          "name": "Login - Wrong Password (expect 401)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status is 401', function() { pm.response.to.have.status(401); });"
+          ]}}],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{adminEmail}}\",\n  \"password\": \"WrongPassword123!\"\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        },
+        {
+          "name": "Get Profile",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status is 200', function() { pm.response.to.have.status(200); });",
+            "pm.test('No password field', function() { pm.expect(pm.response.json().data).to.not.have.property('password'); });"
+          ]}}],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/auth/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "me"]
+            }
+          }
+        },
+        {
+          "name": "Get Profile - No Token (expect 401)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status is 401', function() { pm.response.to.have.status(401); });"
+          ]}}],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/auth/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "me"]
+            }
+          }
+        },
+        {
+          "name": "Refresh Token",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status is 200', function() { pm.response.to.have.status(200); });",
+            "var d = pm.response.json().data; if(d && d.accessToken) pm.environment.set('accessToken', d.accessToken);"
+          ]}}],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/auth/refresh-token",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "refresh-token"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        },
+        {
+          "name": "Logout",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status is 200', function() { pm.response.to.have.status(200); });"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/auth/logout",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "logout"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Categories",
+      "item": [
+        {
+          "name": "List Categories",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status is 200', function() { pm.response.to.have.status(200); });",
+            "pm.test('Has data array', function() { pm.expect(pm.response.json().data).to.be.an('array'); });"
+          ]}}],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/categories?page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["categories"],
+              "query": [{ "key": "page", "value": "1" }, { "key": "limit", "value": "10" }]
+            }
+          }
+        },
+        {
+          "name": "Get All Categories (dropdown)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status is 200', function() { pm.response.to.have.status(200); });"
+          ]}}],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/categories/all", "host": ["{{baseUrl}}"], "path": ["categories", "all"] }
+          }
+        },
+        {
+          "name": "Create Category",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status is 201', function() { pm.response.to.have.status(201); });",
+            "var d = pm.response.json().data; pm.environment.set('categoryId', d._id);",
+            "pm.test('Has _id', function() { pm.expect(d._id).to.be.a('string'); });"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/categories", "host": ["{{baseUrl}}"], "path": ["categories"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Test Electronics\",\n  \"description\": \"Electronics category for testing\"\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        },
+        {
+          "name": "Create Category - Duplicate (expect 409)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status is 409', function() { pm.response.to.have.status(409); });"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/categories", "host": ["{{baseUrl}}"], "path": ["categories"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Test Electronics\"\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        },
+        {
+          "name": "Create Category - Missing Name (expect 422)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status is 422', function() { pm.response.to.have.status(422); });"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/categories", "host": ["{{baseUrl}}"], "path": ["categories"] },
+            "body": { "mode": "raw", "raw": "{\n  \"description\": \"Missing category name\"\n}", "options": { "raw": { "language": "json" } } }
+          }
+        },
+        {
+          "name": "Create Category - Duplicate Slug (expect 409)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Duplicate slug is rejected', function() { pm.response.to.have.status(409); });"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/categories", "host": ["{{baseUrl}}"], "path": ["categories"] },
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Alternate Electronics\",\n  \"slug\": \"test-electronics\"\n}", "options": { "raw": { "language": "json" } } }
+          }
+        },
+        {
+          "name": "Category Statistics",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Category summary fields are returned', function() { pm.response.to.have.status(200); pm.expect(pm.response.json().data).to.have.all.keys('total', 'active', 'inactive', 'withProducts'); });"
+          ]}}],
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/categories/stats", "host": ["{{baseUrl}}"], "path": ["categories", "stats"] } }
+        },
+        {
+          "name": "Search, Filter and Sort Categories",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Category query returns paginated result', function() { pm.response.to.have.status(200); pm.expect(pm.response.json().meta).to.have.property('totalPages'); });"
+          ]}}],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/categories?search=electronics&isActive=true&sortBy=name&order=asc&page=1&limit=10", "host": ["{{baseUrl}}"], "path": ["categories"], "query": [
+              { "key": "search", "value": "electronics" }, { "key": "isActive", "value": "true" },
+              { "key": "sortBy", "value": "name" }, { "key": "order", "value": "asc" },
+              { "key": "page", "value": "1" }, { "key": "limit", "value": "10" }
+            ] }
+          }
+        },
+        {
+          "name": "Get Category - Not Found (expect 404)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status is 404', function() { pm.response.to.have.status(404); });"
+          ]}}],
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/categories/64a0000000000000000000ff", "host": ["{{baseUrl}}"], "path": ["categories", "64a0000000000000000000ff"] } }
+        },
+        {
+          "name": "List Categories - No Auth (expect 401)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Unauthenticated category access is rejected', function() { pm.response.to.have.status(401); });"
+          ]}}],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/categories", "host": ["{{baseUrl}}"], "path": ["categories"] }
+          }
+        },
+        {
+          "name": "Get Category By ID",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status is 200', function() { pm.response.to.have.status(200); });"
+          ]}}],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/categories/{{categoryId}}", "host": ["{{baseUrl}}"], "path": ["categories", "{{categoryId}}"] }
+          }
+        },
+        {
+          "name": "Update Category",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status is 200', function() { pm.response.to.have.status(200); });"
+          ]}}],
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/categories/{{categoryId}}", "host": ["{{baseUrl}}"], "path": ["categories", "{{categoryId}}"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"description\": \"Updated description via Postman\"\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        },
+        {
+          "name": "Deactivate Category",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Category is inactive', function() { pm.response.to.have.status(200); pm.expect(pm.response.json().data.isActive).to.equal(false); });"
+          ]}}],
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/categories/{{categoryId}}", "host": ["{{baseUrl}}"], "path": ["categories", "{{categoryId}}"] },
+            "body": { "mode": "raw", "raw": "{\n  \"isActive\": false\n}", "options": { "raw": { "language": "json" } } }
+          }
+        },
+        {
+          "name": "Reactivate Category",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Category is active', function() { pm.response.to.have.status(200); pm.expect(pm.response.json().data.isActive).to.equal(true); });"
+          ]}}],
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/categories/{{categoryId}}", "host": ["{{baseUrl}}"], "path": ["categories", "{{categoryId}}"] },
+            "body": { "mode": "raw", "raw": "{\n  \"isActive\": true\n}", "options": { "raw": { "language": "json" } } }
+          }
+        },
+        {
+          "name": "Create Reassignment Category",
+          "event": [
+            { "listen": "prerequest", "script": { "type": "text/javascript", "exec": ["pm.environment.set('reassignmentCategoryName', 'Postman Destination ' + Date.now());"] }},
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "pm.test('Destination category created', function() { pm.response.to.have.status(201); pm.environment.set('reassignmentCategoryId', pm.response.json().data._id); });"
+            ]}}
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/categories", "host": ["{{baseUrl}}"], "path": ["categories"] },
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"{{reassignmentCategoryName}}\"\n}", "options": { "raw": { "language": "json" } } }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Suppliers",
+      "item": [
+        {
+          "name": "List Suppliers",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status is 200', function() { pm.response.to.have.status(200); });"
+          ]}}],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/suppliers?page=1&limit=10", "host": ["{{baseUrl}}"], "path": ["suppliers"], "query": [{"key":"page","value":"1"},{"key":"limit","value":"10"}] }
+          }
+        },
+        {
+          "name": "Get All Suppliers (dropdown)",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/suppliers/all", "host": ["{{baseUrl}}"], "path": ["suppliers", "all"] }
+          }
+        },
+        {
+          "name": "Create Supplier",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status is 201', function() { pm.response.to.have.status(201); });",
+            "pm.environment.set('supplierId', pm.response.json().data._id);"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/suppliers", "host": ["{{baseUrl}}"], "path": ["suppliers"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Test Supplier Co.\",\n  \"email\": \"test.supplier@example.com\",\n  \"phone\": \"+1-555-9999\",\n  \"contactPerson\": \"John Contact\"\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        },
+        {
+          "name": "Get Supplier By ID",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status is 200', function() { pm.response.to.have.status(200); });"
+          ]}}],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/suppliers/{{supplierId}}", "host": ["{{baseUrl}}"], "path": ["suppliers", "{{supplierId}}"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Products",
+      "item": [
+        {
+          "name": "Product Statistics",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status is 200', function() { pm.response.to.have.status(200); });",
+            "pm.test('Has product stock counts', function() { pm.expect(pm.response.json().data).to.have.all.keys('total', 'active', 'inactive', 'lowStock', 'outOfStock'); });"
+          ]}}],
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/products/stats", "host": ["{{baseUrl}}"], "path": ["products", "stats"] } }
+        },
+        {
+          "name": "List Products",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status is 200', function() { pm.response.to.have.status(200); });",
+            "pm.test('Has meta.totalPages', function() { pm.expect(pm.response.json().meta).to.have.property('totalPages'); });"
+          ]}}],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/products?page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["products"],
+              "query": [{"key":"page","value":"1"},{"key":"limit","value":"10"}]
+            }
+          }
+        },
+        {
+          "name": "Search Products",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status is 200', function() { pm.response.to.have.status(200); });"
+          ]}}],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/products?search=headphone",
+              "host": ["{{baseUrl}}"],
+              "path": ["products"],
+              "query": [{"key":"search","value":"headphone"}]
+            }
+          }
+        },
+        {
+          "name": "Get Low Stock Products",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status is 200', function() { pm.response.to.have.status(200); });"
+          ]}}],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/products/low-stock", "host": ["{{baseUrl}}"], "path": ["products", "low-stock"] }
+          }
+        },
+        {
+          "name": "Create Product",
+          "event": [
+            { "listen": "prerequest", "script": { "type": "text/javascript", "exec": ["pm.environment.set('productSku', 'PM-' + Date.now());"] }},
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "pm.test('Status is 201', function() { pm.response.to.have.status(201); });",
+              "var d = pm.response.json().data; pm.environment.set('productId', d._id); pm.environment.set('productSku', d.sku);",
+              "pm.test('SKU is uppercase', function() { pm.expect(d.sku).to.equal(d.sku.toUpperCase()); });",
+              "pm.test('Initial stock and barcode saved', function() { pm.expect(d.stock).to.equal(100); pm.expect(d.barcode).to.equal('012345678905'); });"
+            ]}}
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/products", "host": ["{{baseUrl}}"], "path": ["products"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Postman Test Headphones\",\n  \"sku\": \"{{productSku}}\",\n  \"barcode\": \"012345678905\",\n  \"category\": \"{{categoryId}}\",\n  \"price\": 99.99,\n  \"cost\": 50.00,\n  \"stock\": 100,\n  \"lowStockThreshold\": 10,\n  \"unit\": \"pcs\",\n  \"description\": \"Test product created via Postman\",\n  \"imageUrl\": \"https://example.com/product.jpg\",\n  \"isActive\": true\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        },
+        {
+          "name": "Verify Product Category Relationship",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Category products endpoint returns created product', function() { pm.response.to.have.status(200); pm.expect(pm.response.json().data.some(function(p) { return p._id === pm.environment.get('productId'); })).to.equal(true); });"
+          ]}}],
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/categories/{{categoryId}}/products", "host": ["{{baseUrl}}"], "path": ["categories", "{{categoryId}}", "products"] }
+          }
+        },
+        {
+          "name": "Prevent Category Deletion with Products (expect 409)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Category deletion is blocked while products are assigned', function() { pm.response.to.have.status(409); });"
+          ]}}],
+          "request": { "method": "DELETE", "url": { "raw": "{{baseUrl}}/categories/{{categoryId}}", "host": ["{{baseUrl}}"], "path": ["categories", "{{categoryId}}"] }
+          }
+        },
+        {
+          "name": "Create Product - Duplicate SKU (expect 409)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Duplicate SKU is rejected', function() { pm.response.to.have.status(409); });"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/products", "host": ["{{baseUrl}}"], "path": ["products"] },
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Duplicate SKU Product\",\n  \"sku\": \"{{productSku}}\",\n  \"category\": \"{{categoryId}}\",\n  \"price\": 20,\n  \"cost\": 10,\n  \"stock\": 1\n}", "options": { "raw": { "language": "json" } } }
+          }
+        },
+        {
+          "name": "Create Product - Missing Fields (expect 422)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status is 422', function() { pm.response.to.have.status(422); });",
+            "pm.test('Has errors array', function() { pm.expect(pm.response.json().errors).to.be.an('array'); });"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/products", "host": ["{{baseUrl}}"], "path": ["products"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Incomplete Product\"\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        },
+        {
+          "name": "Search by SKU",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status is 200 and SKU matches', function() { pm.response.to.have.status(200); pm.expect(pm.response.json().data[0].sku).to.equal(pm.environment.get('productSku')); });"
+          ]}}],
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/products?search={{productSku}}", "host": ["{{baseUrl}}"], "path": ["products"], "query": [{"key":"search","value":"{{productSku}}"}] } }
+        },
+        {
+          "name": "Filter by category and low stock",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status is 200', function() { pm.response.to.have.status(200); });",
+            "pm.test('Every result is low stock', function() { pm.response.json().data.forEach(function(p) { pm.expect(p.stock).to.be.at.most(p.lowStockThreshold); }); });"
+          ]}}],
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/products?category={{categoryId}}&stockStatus=low_stock", "host": ["{{baseUrl}}"], "path": ["products"], "query": [{"key":"category","value":"{{categoryId}}"},{"key":"stockStatus","value":"low_stock"}] } }
+        },
+        {
+          "name": "Sort and paginate products",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status is 200 and pagination is applied', function() { pm.response.to.have.status(200); var r = pm.response.json(); pm.expect(r.meta.page).to.equal(1); pm.expect(r.data.length).to.be.at.most(2); });"
+          ]}}],
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/products?page=1&limit=2&sortBy=price&order=asc", "host": ["{{baseUrl}}"], "path": ["products"], "query": [{"key":"page","value":"1"},{"key":"limit","value":"2"},{"key":"sortBy","value":"price"},{"key":"order","value":"asc"}] } }
+        },
+        {
+          "name": "Get Product By ID",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status is 200', function() { pm.response.to.have.status(200); });",
+            "pm.test('Has stock and barcode fields', function() { var d = pm.response.json().data; pm.expect(d).to.have.property('stock'); pm.expect(d).to.have.property('barcode'); });"
+          ]}}],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/products/{{productId}}", "host": ["{{baseUrl}}"], "path": ["products", "{{productId}}"] }
+          }
+        },
+        {
+          "name": "Update Product",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status is 200 and stock unchanged', function() { pm.response.to.have.status(200); pm.expect(pm.response.json().data.stock).to.equal(100); });"
+          ]}}],
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/products/{{productId}}", "host": ["{{baseUrl}}"], "path": ["products", "{{productId}}"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"price\": 109.99,\n  \"description\": \"Updated via Postman\"\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        },
+        {
+          "name": "Update Product - Reject Stock Edit (expect 422)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Manual stock edit is rejected', function() { pm.response.to.have.status(422); });"
+          ]}}],
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/products/{{productId}}", "host": ["{{baseUrl}}"], "path": ["products", "{{productId}}"] },
+            "body": { "mode": "raw", "raw": "{\n  \"stock\": 4\n}", "options": { "raw": { "language": "json" } } }
+          }
+        },
+        {
+          "name": "Update Product - Reject Negative Price (expect 422)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Negative price is rejected', function() { pm.response.to.have.status(422); });"
+          ]}}],
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/products/{{productId}}", "host": ["{{baseUrl}}"], "path": ["products", "{{productId}}"] },
+            "body": { "mode": "raw", "raw": "{\n  \"price\": -1\n}", "options": { "raw": { "language": "json" } } }
+          }
+        },
+        {
+          "name": "Get Nonexistent Product (expect 404)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Missing product returns 404', function() { pm.response.to.have.status(404); });"
+          ]}}],
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/products/64a0000000000000000000ff", "host": ["{{baseUrl}}"], "path": ["products", "64a0000000000000000000ff"] } }
+        },
+        {
+          "name": "List Products - Unauthenticated (expect 401)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Authentication is required', function() { pm.response.to.have.status(401); });"
+          ]}}],
+          "request": { "auth": { "type": "noauth" }, "method": "GET", "url": { "raw": "{{baseUrl}}/products", "host": ["{{baseUrl}}"], "path": ["products"] } }
+        },
+        {
+          "name": "Create Product - Unauthenticated (expect 401)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Authentication is required for writes', function() { pm.response.to.have.status(401); });"
+          ]}}],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/products", "host": ["{{baseUrl}}"], "path": ["products"] },
+            "body": { "mode": "raw", "raw": "{}", "options": { "raw": { "language": "json" } } }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Customers",
+      "item": [
+        {
+          "name": "List Customers",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status is 200', function() { pm.response.to.have.status(200); });"
+          ]}}],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/customers?page=1&limit=10", "host": ["{{baseUrl}}"], "path": ["customers"], "query": [{"key":"page","value":"1"},{"key":"limit","value":"10"}] }
+          }
+        },
+        {
+          "name": "Get All Customers (dropdown)",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/customers/all", "host": ["{{baseUrl}}"], "path": ["customers", "all"] }
+          }
+        },
+        {
+          "name": "Create Customer",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status is 201', function() { pm.response.to.have.status(201); });",
+            "pm.environment.set('customerId', pm.response.json().data._id);"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/customers", "host": ["{{baseUrl}}"], "path": ["customers"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Postman Test Customer\",\n  \"email\": \"pm.customer@example.com\",\n  \"phone\": \"+1-555-8888\"\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        },
+        {
+          "name": "Get Customer Purchase History",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status is 200', function() { pm.response.to.have.status(200); });",
+            "pm.test('Has sales array', function() { pm.expect(pm.response.json().data.sales).to.be.an('array'); });"
+          ]}}],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/customers/{{customerId}}/purchase-history", "host": ["{{baseUrl}}"], "path": ["customers", "{{customerId}}", "purchase-history"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Sales",
+      "item": [
+        {
+          "name": "Create Sale - Valid (stock decreases)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status is 201', function() { pm.response.to.have.status(201); });",
+            "var d = pm.response.json().data;",
+            "pm.environment.set('saleId', d.sale._id);",
+            "pm.test('Has saleNumber', function() { pm.expect(d.sale.saleNumber).to.be.a('string'); });",
+            "pm.test('Has items array', function() { pm.expect(d.items).to.be.an('array').with.length.greaterThan(0); });",
+            "pm.test('totalAmount > 0', function() { pm.expect(d.sale.totalAmount).to.be.greaterThan(0); });"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/sales", "host": ["{{baseUrl}}"], "path": ["sales"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customer\": \"{{customerId}}\",\n  \"paymentMethod\": \"cash\",\n  \"taxRate\": 8.5,\n  \"notes\": \"Postman test sale\",\n  \"items\": [\n    {\n      \"product\": \"{{productId}}\",\n      \"quantity\": 2,\n      \"discountPercent\": 5\n    }\n  ]\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        },
+        {
+          "name": "Create Sale - Insufficient Stock (expect 422)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status is 422', function() { pm.response.to.have.status(422); });",
+            "pm.test('Error mentions stock', function() { pm.expect(pm.response.json().message.toLowerCase()).to.include('stock'); });"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/sales", "host": ["{{baseUrl}}"], "path": ["sales"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"items\": [\n    { \"product\": \"{{productId}}\", \"quantity\": 999999 }\n  ]\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        },
+        {
+          "name": "Verify Stock After Sale",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Sale reduced stock by sold quantity', function() { pm.response.to.have.status(200); pm.expect(pm.response.json().data.stock).to.equal(98); });"
+          ]}}],
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/products/{{productId}}", "host": ["{{baseUrl}}"], "path": ["products", "{{productId}}"] } }
+        },
+        {
+          "name": "Create Sale - Empty Items (expect 422)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status is 422', function() { pm.response.to.have.status(422); });"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/sales", "host": ["{{baseUrl}}"], "path": ["sales"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"items\": [] }",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        },
+        {
+          "name": "Create Sale - No Auth (expect 401)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status is 401', function() { pm.response.to.have.status(401); });"
+          ]}}],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/sales", "host": ["{{baseUrl}}"], "path": ["sales"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"items\": [{ \"product\": \"{{productId}}\", \"quantity\": 1 }] }",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        },
+        {
+          "name": "List Sales",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status is 200', function() { pm.response.to.have.status(200); });",
+            "pm.test('Has meta.total', function() { pm.expect(pm.response.json().meta.total).to.be.a('number'); });"
+          ]}}],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/sales?page=1&limit=10", "host": ["{{baseUrl}}"], "path": ["sales"], "query": [{"key":"page","value":"1"},{"key":"limit","value":"10"}] }
+          }
+        },
+        {
+          "name": "List Sales - Filter by Date Range",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/sales?startDate=2026-01-01&endDate=2026-12-31",
+              "host": ["{{baseUrl}}"],
+              "path": ["sales"],
+              "query": [{"key":"startDate","value":"2026-01-01"},{"key":"endDate","value":"2026-12-31"}]
+            }
+          }
+        },
+        {
+          "name": "Get Sale By ID (includes items)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status is 200', function() { pm.response.to.have.status(200); });",
+            "pm.test('Has items array', function() { pm.expect(pm.response.json().data.items).to.be.an('array'); });"
+          ]}}],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/sales/{{saleId}}", "host": ["{{baseUrl}}"], "path": ["sales", "{{saleId}}"] }
+          }
+        },
+        {
+          "name": "Update Sale Status - Cancel",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status is 200', function() { pm.response.to.have.status(200); });"
+          ]}}],
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/sales/{{saleId}}/status", "host": ["{{baseUrl}}"], "path": ["sales", "{{saleId}}", "status"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"cancelled\",\n  \"notes\": \"Cancelled by Postman test\"\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Purchases",
+      "item": [
+        {
+          "name": "Create Purchase - Valid (stock increases)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status is 201', function() { pm.response.to.have.status(201); });",
+            "var d = pm.response.json().data;",
+            "pm.environment.set('purchaseId', d.purchase._id);",
+            "pm.test('Has purchaseNumber', function() { pm.expect(d.purchase.purchaseNumber).to.be.a('string'); });",
+            "pm.test('totalAmount > 0', function() { pm.expect(d.purchase.totalAmount).to.be.greaterThan(0); });"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/purchases", "host": ["{{baseUrl}}"], "path": ["purchases"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"supplier\": \"{{supplierId}}\",\n  \"paymentMethod\": \"bank_transfer\",\n  \"notes\": \"Postman test purchase\",\n  \"items\": [\n    {\n      \"product\": \"{{productId}}\",\n      \"quantity\": 10,\n      \"unitCost\": 45.00\n    }\n  ]\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        },
+        {
+          "name": "Create Purchase - Invalid Supplier (expect 404)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status is 404', function() { pm.response.to.have.status(404); });"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/purchases", "host": ["{{baseUrl}}"], "path": ["purchases"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"supplier\": \"64a0000000000000000000ff\",\n  \"items\": [{ \"product\": \"{{productId}}\", \"quantity\": 1, \"unitCost\": 10 }]\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        },
+        {
+          "name": "Verify Stock After Purchase",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Purchase increased stock by received quantity', function() { pm.response.to.have.status(200); pm.expect(pm.response.json().data.stock).to.equal(108); });"
+          ]}}],
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/products/{{productId}}", "host": ["{{baseUrl}}"], "path": ["products", "{{productId}}"] } }
+        },
+        {
+          "name": "List Purchases",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status is 200', function() { pm.response.to.have.status(200); });"
+          ]}}],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/purchases?page=1&limit=10", "host": ["{{baseUrl}}"], "path": ["purchases"], "query": [{"key":"page","value":"1"},{"key":"limit","value":"10"}] }
+          }
+        },
+        {
+          "name": "Get Purchase By ID (includes items)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status is 200', function() { pm.response.to.have.status(200); });",
+            "pm.test('Has items array', function() { pm.expect(pm.response.json().data.items).to.be.an('array'); });"
+          ]}}],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/purchases/{{purchaseId}}", "host": ["{{baseUrl}}"], "path": ["purchases", "{{purchaseId}}"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Inventory",
+      "item": [
+        {
+          "name": "Get Stock Summary",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status is 200', function() { pm.response.to.have.status(200); });",
+            "pm.test('Has data array', function() { pm.expect(pm.response.json().data).to.be.an('array'); });"
+          ]}}],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/inventory", "host": ["{{baseUrl}}"], "path": ["inventory"] }
+          }
+        },
+        {
+          "name": "Get Low Stock Alerts",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status is 200', function() { pm.response.to.have.status(200); });"
+          ]}}],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/inventory/low-stock", "host": ["{{baseUrl}}"], "path": ["inventory", "low-stock"] }
+          }
+        },
+        {
+          "name": "Adjust Stock - Add",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status is 201', function() { pm.response.to.have.status(201); });",
+            "pm.test('Movement recorded', function() { pm.expect(pm.response.json().data.movement).to.exist; });"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/inventory/adjust", "host": ["{{baseUrl}}"], "path": ["inventory", "adjust"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"product\": \"{{productId}}\",\n  \"type\": \"adjustment\",\n  \"quantityChange\": 5,\n  \"notes\": \"Postman adjustment test\"\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        },
+        {
+          "name": "Adjust Stock - Would Go Negative (expect 422)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status is 422', function() { pm.response.to.have.status(422); });",
+            "pm.test('Error mentions negative', function() { pm.expect(pm.response.json().message.toLowerCase()).to.include('negative'); });"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/inventory/adjust", "host": ["{{baseUrl}}"], "path": ["inventory", "adjust"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"product\": \"{{productId}}\",\n  \"type\": \"adjustment\",\n  \"quantityChange\": -999999,\n  \"notes\": \"Should fail - negative stock\"\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        },
+        {
+          "name": "Get Movement History",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status is 200', function() { pm.response.to.have.status(200); });"
+          ]}}],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/inventory/movements?page=1&limit=20", "host": ["{{baseUrl}}"], "path": ["inventory", "movements"], "query": [{"key":"page","value":"1"},{"key":"limit","value":"20"}] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Dashboard",
+      "item": [
+        {
+          "name": "Get Dashboard Summary",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status is 200', function() { pm.response.to.have.status(200); });",
+            "var d = pm.response.json().data;",
+            "pm.test('Has counts', function() { pm.expect(d.counts).to.have.property('products'); });",
+            "pm.test('Has today's sales metrics', function() { pm.expect(d.today).to.have.property('sales'); pm.expect(d.today).to.have.property('salesCount'); });",
+            "pm.test('Has 7 and 30 day chart series', function() { pm.expect(d.salesLast7Days).to.have.length(7); pm.expect(d.salesLast30Days).to.have.length(30); });",
+            "pm.test('Has recent transaction lists', function() { pm.expect(d.recentSales).to.be.an('array'); pm.expect(d.recentPurchases).to.be.an('array'); });"
+          ]}}],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/dashboard/summary", "host": ["{{baseUrl}}"], "path": ["dashboard", "summary"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Reports",
+      "item": [
+        {
+          "name": "Sales Report",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status is 200', function() { pm.response.to.have.status(200); });",
+            "pm.test('Has summary.totalRevenue', function() { pm.expect(pm.response.json().data.summary).to.have.property('totalRevenue'); });"
+          ]}}],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/reports/sales?groupBy=day", "host": ["{{baseUrl}}"], "path": ["reports", "sales"], "query": [{"key":"groupBy","value":"day"}] }
+          }
+        },
+        {
+          "name": "Purchases Report",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status is 200', function() { pm.response.to.have.status(200); });",
+            "pm.test('Has summary.totalCost', function() { pm.expect(pm.response.json().data.summary).to.have.property('totalCost'); });"
+          ]}}],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/reports/purchases?groupBy=month", "host": ["{{baseUrl}}"], "path": ["reports", "purchases"], "query": [{"key":"groupBy","value":"month"}] }
+          }
+        },
+        {
+          "name": "Profit Report",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status is 200', function() { pm.response.to.have.status(200); });",
+            "pm.test('Has profitMargin', function() { pm.expect(pm.response.json().data.summary).to.have.property('profitMargin'); });"
+          ]}}],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/reports/profit?groupBy=month", "host": ["{{baseUrl}}"], "path": ["reports", "profit"], "query": [{"key":"groupBy","value":"month"}] }
+          }
+        },
+        {
+          "name": "Inventory Report",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status is 200', function() { pm.response.to.have.status(200); });",
+            "pm.test('Has totalCostValue', function() { pm.expect(pm.response.json().data.summary).to.have.property('totalCostValue'); });"
+          ]}}],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/reports/inventory", "host": ["{{baseUrl}}"], "path": ["reports", "inventory"] }
+          }
+        },
+        {
+          "name": "Reports - No Auth (expect 401)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status is 401', function() { pm.response.to.have.status(401); });"
+          ]}}],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/reports/sales", "host": ["{{baseUrl}}"], "path": ["reports", "sales"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Users and Roles",
+      "item": [
+        {
+          "name": "List Users",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status is 200', function() { pm.response.to.have.status(200); });",
+            "pm.test('Password not exposed', function() {",
+            "  var users = pm.response.json().data;",
+            "  if (users.length > 0) { pm.expect(users[0]).to.not.have.property('password'); }",
+            "});"
+          ]}}],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/users?page=1&limit=20", "host": ["{{baseUrl}}"], "path": ["users"], "query": [{"key":"page","value":"1"},{"key":"limit","value":"20"}] }
+          }
+        },
+        {
+          "name": "List Roles",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status is 200', function() { pm.response.to.have.status(200); });",
+            "var roles = pm.response.json().data;",
+            "pm.test('Has system roles', function() { pm.expect(roles.filter(function(r){ return r.isSystem; })).to.have.length.at.least(3); });",
+            "if (roles.length > 0) pm.environment.set('roleId', roles.find(function(r){ return r.isSystem; })._id);"
+          ]}}],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/roles", "host": ["{{baseUrl}}"], "path": ["roles"] }
+          }
+        },
+        {
+          "name": "List Permissions",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status is 200', function() { pm.response.to.have.status(200); });",
+            "pm.test('Returns array', function() { pm.expect(pm.response.json().data).to.be.an('array').with.length.greaterThan(0); });"
+          ]}}],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/roles/permissions", "host": ["{{baseUrl}}"], "path": ["roles", "permissions"] }
+          }
+        },
+        {
+          "name": "Create Role",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status is 201', function() { pm.response.to.have.status(201); });"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/roles", "host": ["{{baseUrl}}"], "path": ["roles"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Custom Viewer\",\n  \"description\": \"Read-only role created by Postman\",\n  \"permissions\": [\"products:read\", \"sales:read\", \"dashboard:read\"]\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        },
+        {
+          "name": "Delete System Role (expect 400)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status is 400', function() { pm.response.to.have.status(400); });"
+          ]}}],
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{baseUrl}}/roles/{{roleId}}", "host": ["{{baseUrl}}"], "path": ["roles", "{{roleId}}"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Product Cleanup",
+      "item": [
+        {
+          "name": "Delete Product (soft deactivate)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Product is soft deactivated', function() { pm.response.to.have.status(200); pm.expect(pm.response.json().data.isActive).to.equal(false); });"
+          ]}}],
+          "request": { "method": "DELETE", "url": { "raw": "{{baseUrl}}/products/{{productId}}", "host": ["{{baseUrl}}"], "path": ["products", "{{productId}}"] } }
+        },
+        {
+          "name": "Reassign Product and Delete Category",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Category deleted after explicit reassignment', function() { pm.response.to.have.status(200); pm.expect(pm.response.json().data.reassignedProducts).to.be.at.least(1); });"
+          ]}}],
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{baseUrl}}/categories/{{categoryId}}?reassignTo={{reassignmentCategoryId}}", "host": ["{{baseUrl}}"], "path": ["categories", "{{categoryId}}"], "query": [{ "key": "reassignTo", "value": "{{reassignmentCategoryId}}" }]
+          }
+        }
+        }
+      ]
+    },
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "Health Check",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status is 200', function() { pm.response.to.have.status(200); });",
+            "pm.test('success is true', function() { pm.expect(pm.response.json().success).to.be.true; });"
+          ]}}],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "url": {
+              "raw": "http://localhost:5000/health",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5000",
+              "path": ["health"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
